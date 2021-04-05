@@ -73,6 +73,10 @@ docs: ## generate Sphinx HTML documentation, including API docs
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
+release-test: dist ## package and upload a release
+	twine check dist/* || echo Failed to validate release
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
 release: dist ## package and upload a release
 	twine upload dist/*
 
@@ -83,3 +87,12 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+conform	: ## Conform to a standard of coding syntax
+	black aws_cfn_kafka_admin_provider tests
+
+data-model:
+	datamodel-codegen  --input aws-cfn-kafka-admin-provider-schema.json \
+		--input-file-type jsonschema \
+		--output aws_cfn_kafka_admin_provider/model.py \
+		--enum-field-as-literal all

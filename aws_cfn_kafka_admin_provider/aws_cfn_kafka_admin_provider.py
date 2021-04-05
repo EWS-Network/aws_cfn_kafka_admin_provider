@@ -6,7 +6,6 @@
 """Main module."""
 
 import re
-import json
 import yaml
 
 try:
@@ -21,7 +20,8 @@ from aws_custom_ews_kafka_topic.custom import KafkaTopic as CTopic
 from aws_custom_ews_kafka_topic.resource import KafkaTopic as RTopic
 
 
-from .model import Topic, Model
+from .model import Model
+
 
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
@@ -44,13 +44,15 @@ class KafkaStack(object):
 
     def render_topics(self):
         function_name = None
+        print(self.model)
         if self.model.FunctionName:
             self.topic_class = CTopic
             function_name = (
                 function_name
                 if self.model.FunctionName.startswith("arn:aws")
                 else Sub(
-                    f"arn:${{AWS::Partition}}:lambda:${{AWS::Region}}:${{AWS::AccountId}}:function:{function_name}"
+                    "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:"
+                    f"{self.model.FunctionName}"
                 )
             )
         for topic in self.model.Topics:
@@ -63,15 +65,18 @@ class KafkaStack(object):
                     "SASLUsername": self.model.SASLUsername
                     if self.model.SASLUsername
                     else Ref(AWS_NO_VALUE),
-                    "SASLPassword": self.model.SASLUsername
-                    if self.model.SASLUsername
+                    "SASLPassword": self.model.SASLPassword
+                    if self.model.SASLPassword
                     else Ref(AWS_NO_VALUE),
                     "SASLMechanism": self.model.SASLMechanism
-                    if self.model.SASLUsername
+                    if self.model.SASLMechanism
                     else Ref(AWS_NO_VALUE),
                     "SecurityProtocol": self.model.SecurityProtocol
-                    if self.model.SASLUsername
+                    if self.model.SecurityProtocol
                     else Ref(AWS_NO_VALUE),
+                    "ReplicationFactor": self.model.ReplicationFactor.__root__
+                    if not topic.ReplicationFactor
+                    else topic.ReplicationFactor.__root__,
                 }
             )
             if "Settings" in topic_cfg and not topic_cfg["Settings"]:

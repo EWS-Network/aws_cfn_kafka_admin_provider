@@ -18,7 +18,7 @@ try:
         readme = readme_file.read()
         readme = REF_REGX.sub("", readme)
 except FileNotFoundError:
-    readme = "ECS ComposeX"
+    readme = "Kafka Admin Provider for AWS CFN"
 
 try:
     with open(f"{DIR_HERE}/HISTORY.rst", encoding="utf-8") as history_file:
@@ -63,7 +63,9 @@ setup(
         ],
     },
     install_requires=requirements,
-    long_description=readme + "\n\n" + history,
+    license="MPL-2.0",
+    long_description=readme,
+    long_description_content_type="text/x-rst",
     include_package_data=True,
     keywords="aws_cfn_kafka_admin_provider",
     name="aws_cfn_kafka_admin_provider",
