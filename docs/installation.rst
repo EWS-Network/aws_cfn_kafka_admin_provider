@@ -1,3 +1,7 @@
+.. meta::
+    :description: Kafka admin via AWS CloudFormation
+    :keywords: AWS, CloudFormation, Kafka, Confluent
+
 .. highlight:: shell
 
 ============
@@ -12,7 +16,7 @@ To install Kafka Admin Provider, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install aws_cfn_kafka_admin_provider
+    $ python3 -m pip install aws_cfn_kafka_admin_provider
 
 This is the preferred method to install Kafka Admin Provider, as it will always install the most recent stable release.
 

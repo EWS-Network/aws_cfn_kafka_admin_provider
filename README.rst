@@ -1,3 +1,7 @@
+.. meta::
+    :description: Kafka admin via AWS CloudFormation
+    :keywords: AWS, CloudFormation, Kafka, Confluent
+
 ====================
 Kafka Admin Provider
 ====================
@@ -51,16 +55,21 @@ As lib
 
 
 Render models
--------------
+===============
 
 .. code-block:: bash
+
+    # Through makefile
+    make data-model
+
+    # Via CLI with
 
     datamodel-codegen --input-file-type jsonschema \
         --input aws-cfn-kafka-admin-provider-schema.json \
         --output aws_cfn_kafka_admin_provider/model.py
 
 Credits
--------
+========
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 

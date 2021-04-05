@@ -122,3 +122,4 @@ ENV/
 /tests/test.config.json
 /reports/
 *portal.sso.GetRoleCredentials*.json
+/docs/aws_cfn_kafka_admin_provider.rst

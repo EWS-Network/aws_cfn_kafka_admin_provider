@@ -44,7 +44,6 @@ class KafkaStack(object):
 
     def render_topics(self):
         function_name = None
-        print(self.model)
         if self.model.FunctionName:
             self.topic_class = CTopic
             function_name = (
