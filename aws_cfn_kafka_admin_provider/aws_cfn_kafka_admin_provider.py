@@ -53,6 +53,23 @@ def keyisset(x, y):
     return False
 
 
+def keypresent(x, y):
+    """
+    Macro to figure if the the dictionary contains a key and that the key is not empty
+
+    :param x: The key to check presence in the dictionary
+    :type x: str
+    :param y: The dictionary to check for
+    :type y: dict
+
+    :returns: True/False
+    :rtype: bool
+    """
+    if isinstance(y, dict) and x in y.keys():
+        return True
+    return False
+
+
 def merge_contents(primary, override):
     """
     Function to override and update settings from override to primary
@@ -64,21 +81,22 @@ def merge_contents(primary, override):
         raise TypeError(
             "The content of the override file does not match the expected content pattern."
         )
-    final = deepcopy(primary)
+    final = dict(deepcopy(primary))
     if "Globals" in override.keys() and isinstance(override["Globals"], dict):
         override_globals = EwsKafkaParmeters.parse_obj(override["Globals"])
         final["Globals"].update(override_globals.dict())
-    if keyisset("ACLS", final) and (
-        "ACLs" in override.keys() and isinstance(override["ACLs"], dict)
-    ):
+
+    if keyisset("ACLs", final) and (keyisset("ACLs", override)):
         override_acls = ACLs.parse_obj(override["ACLs"]).dict()
-        del override_acls["Policies"]
+        if keypresent("Policies", override_acls):
+            print("You cannot define policies in override files. Ignoring")
+            del override_acls["Policies"]
         final["ACLs"].update(override_acls)
-    if keyisset("Topics", final) and (
-        "Topics" in override.keys() and isinstance(override["Topics"], dict)
-    ):
+
+    if keyisset("Topics", final) and ("Topics" in override.keys()):
         override_topics = Topics.parse_obj(override["Topics"]).dict()
-        del override_topics["Topics"]
+        if keypresent("Topics", override_topics):
+            del override_topics["Topics"]
         final["Topics"].update(override_topics)
     return final
 
@@ -141,6 +159,8 @@ class KafkaStack(object):
         )
 
     def render_topics(self):
+        if not self.model.Topics:
+            return
         function_name = None
         if self.model.Topics.FunctionName:
             self.topic_class = CTopic
@@ -185,6 +205,8 @@ class KafkaStack(object):
         return policy.Resource
 
     def render_acls(self):
+        if not self.model.ACLs:
+            return
         function_name = None
         if self.model.ACLs.FunctionName:
             self.acl_class = CACLs
