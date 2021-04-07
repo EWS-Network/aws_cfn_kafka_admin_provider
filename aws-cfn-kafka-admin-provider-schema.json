@@ -2,89 +2,51 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "required": [
-        "BootstrapServers",
-        "Topics"
+        "Globals"
     ],
     "typeName": "config",
     "properties": {
-        "BootstrapServers": {
-            "type": "string"
-        },
-        "SecurityProtocol": {
-            "type": "string",
-            "default": "PLAINTEXT",
-            "description": "Kafka Security Protocol.",
-            "enum": [
-                "PLAINTEXT",
-                "SSL",
-                "SASL_PLAINTEXT",
-                "SASL_SSL"
-            ]
-        },
-        "SASLMechanism": {
-            "type": "string",
-            "default": "PLAIN",
-            "description": "Kafka SASL mechanism for Authentication",
-            "enum": [
-                "PLAIN",
-                "GSSAPI",
-                "OAUTHBEARER",
-                "SCRAM-SHA-256",
-                "SCRAM-SHA-512"
-            ]
-        },
-        "SASLUsername": {
-            "type": "string",
-            "description": "Kafka SASL username for Authentication"
-        },
-        "SASLPassword": {
-            "type": "string",
-            "description": "Kafka SASL password for Authentication"
-        },
-        "FunctionName": {
-            "type": "string",
-            "description": "Name or ARN of the Lambda function to use for Custom::KafkaTopic"
-        },
-        "ReplicationFactor": {
-            "$ref": "#/definitions/ReplicationFactor"
+        "Globals": {
+            "$ref": "https://raw.githubusercontent.com/EWS-Network/aws_cfn_kafka_definitions/main/ews-kafka-parmeters.json"
         },
         "Topics": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/Topic"
-            }
+            "$ref": "#/definitions/Topics"
+        },
+        "ACLs": {
+            "$ref": "#/definitions/ACLs"
         }
     },
     "definitions": {
-        "ReplicationFactor": {
-            "type": "integer",
-            "default": 1,
-            "description": "Kafka topic replication factor"
-        },
-        "Topic": {
+        "ACLs": {
             "type": "object",
-            "required": [
-                "Name",
-                "PartitionsCount"
-            ],
             "properties": {
-                "Name": {
-                    "$comment": "The name of the kafka topic",
-                    "type": "string",
-                    "minLength": 1,
-                    "pattern": "^[a-zA-Z0-9_.-]+$",
-                    "description": "Kafka topic name"
+                "Policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://raw.githubusercontent.com/EWS-Network/aws_cfn_kafka_definitions/main/ews-kafka-acl.json#/definitions/Policy"
+                    }
                 },
-                "PartitionsCount": {
-                    "type": "integer",
-                    "default": 1,
-                    "description": "Number of partitions for the new Kafka topic"
+                "FunctionName": {
+                    "type": "string",
+                    "description": "Name or ARN of the Lambda function to use for Custom::KafkaACL"
+                }
+            }
+        },
+        "Topics": {
+            "type": "object",
+            "properties": {
+                "Topics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://raw.githubusercontent.com/EWS-Network/aws_cfn_kafka_definitions/main/ews-kafka-topic.json"
+                    }
                 },
                 "ReplicationFactor": {
-                    "$ref": "#/definitions/ReplicationFactor"
+                    "$ref": "https://raw.githubusercontent.com/EWS-Network/aws_cfn_kafka_definitions/main/ews-kafka-topic.json#/properties/ReplicationFactor"
                 },
-                "Settings": {
-                    "type": "object"
+                "FunctionName": {
+                    "type": "string",
+                    "description": "Name or ARN of the Lambda function to use for Custom::KafkaTopic"
                 }
             }
         }

@@ -21,6 +21,13 @@ def main():
         help="Path to the kafka definition file",
     )
     parser.add_argument(
+        "--override-file-path",
+        required=False,
+        dest="override_path",
+        help="Override file path to the kafka definition file",
+        default=None,
+    )
+    parser.add_argument(
         "-o", "--output-file", dest="output_file", help="Path to file output"
     )
     parser.add_argument(
@@ -33,8 +40,9 @@ def main():
     parser.add_argument("_", nargs="*")
     args = parser.parse_args()
 
-    stack = KafkaStack(args.file_path)
+    stack = KafkaStack(args.file_path, args.override_path)
     stack.render_topics()
+    stack.render_acls()
     if args.output_file:
         with open(args.output_file, "w") as output_fd:
             if args.format == "yaml":

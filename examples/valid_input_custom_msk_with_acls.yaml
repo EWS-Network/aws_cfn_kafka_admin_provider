@@ -1,0 +1,29 @@
+---
+# Test file
+
+Fn::Transform:
+  - ews-kafka-admin-provider
+
+Globals:
+  BootstrapServers: b-1.cluster-demo-01.g02u6o.c1.kafka.eu-west-1.amazonaws.com:9096,b-3.cluster-demo-01.g02u6o.c1.kafka.eu-west-1.amazonaws.com:9096,b-2.cluster-demo-01.g02u6o.c1.kafka.eu-west-1.amazonaws.com:9096
+  SASLUsername: "{{resolve:secretsmanager:arn:aws:secretsmanager:eu-west-1:012345678912:secret:AmazonMSK_dummy001-bd9iT7:SecretString:username}}"
+  SASLPassword: "{{resolve:secretsmanager:arn:aws:secretsmanager:eu-west-1:012345678912:secret:AmazonMSK_dummy001-bd9iT7:SecretString:password}}"
+  SecurityProtocol: "SASL_SSL"
+  SASLMechanism: "SCRAM-SHA-512"
+  TopicsFunctionName: cfn-kafka-topic-provider-CustomProviderFunction-8PYOY9ZTA42E
+  ACLsFunctionName: cfn-kafka-acl-provider-CustomProviderFunction-13MUFI6G5IJWI
+  ReplicationFactor: 3
+
+Topics:
+  - Name: new-topic-01
+    PartitionsCount: 4
+  - Name: new-topic-02
+    PartitionsCount: 2
+
+
+ACLs:
+  - Resource: new-topic-01
+    ResourceType: TOPIC
+    Principal: User:1234
+    Action: READ
+    Effect: ALLOW

@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc clean-build docs help data-model
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -85,7 +85,7 @@ dist: clean ## builds source and wheel package
 	python setup.py bdist_wheel
 	ls -l dist
 
-install: clean ## install the package to the active Python's site-packages
+install: clean data-model ## install the package to the active Python's site-packages
 	python setup.py install
 
 conform	: ## Conform to a standard of coding syntax
@@ -95,4 +95,4 @@ data-model:
 	datamodel-codegen  --input aws-cfn-kafka-admin-provider-schema.json \
 		--input-file-type jsonschema \
 		--output aws_cfn_kafka_admin_provider/model.py \
-		--enum-field-as-literal all
+#		--enum-field-as-literal all
