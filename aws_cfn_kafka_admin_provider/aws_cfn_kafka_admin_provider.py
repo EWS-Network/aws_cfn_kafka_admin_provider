@@ -19,9 +19,15 @@ from troposphere import Ref, Sub, GetAtt
 from troposphere import AWS_NO_VALUE
 from cfn_tools import CfnYamlLoader
 
-from aws_custom_ews_kafka_topic import KafkaAclPolicy
-from aws_custom_ews_kafka_topic.custom import KafkaTopic as CTopic, KafkaAcl as CACLs
-from aws_custom_ews_kafka_topic.resource import KafkaTopic as RTopic, KafkaAcl as RACLs
+from aws_custom_ews_kafka_resources import KafkaAclPolicy
+from aws_custom_ews_kafka_resources.custom import (
+    KafkaTopic as CTopic,
+    KafkaAcl as CACLs,
+)
+from aws_custom_ews_kafka_resources.resource import (
+    KafkaTopic as RTopic,
+    KafkaAcl as RACLs,
+)
 
 from .model import (
     Model,
