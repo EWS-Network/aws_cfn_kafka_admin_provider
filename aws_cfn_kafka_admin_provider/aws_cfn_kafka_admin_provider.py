@@ -36,6 +36,23 @@ from .model import Policy, Action, ResourceType, PatternType, Effect
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
 
+def keyisset(x, y):
+    """
+    Macro to figure if the the dictionary contains a key and that the key is not empty
+
+    :param x: The key to check presence in the dictionary
+    :type x: str
+    :param y: The dictionary to check for
+    :type y: dict
+
+    :returns: True/False
+    :rtype: bool
+    """
+    if isinstance(y, dict) and x in y.keys() and y[x]:
+        return True
+    return False
+
+
 def merge_contents(primary, override):
     """
     Function to override and update settings from override to primary
@@ -51,11 +68,15 @@ def merge_contents(primary, override):
     if "Globals" in override.keys() and isinstance(override["Globals"], dict):
         override_globals = EwsKafkaParmeters.parse_obj(override["Globals"])
         final["Globals"].update(override_globals.dict())
-    if "ACLs" in override.keys() and isinstance(override["ACLs"], dict):
+    if keyisset("ACLS", final) and (
+        "ACLs" in override.keys() and isinstance(override["ACLs"], dict)
+    ):
         override_acls = ACLs.parse_obj(override["ACLs"]).dict()
         del override_acls["Policies"]
         final["ACLs"].update(override_acls)
-    if "Topics" in override.keys() and isinstance(override["Topics"], dict):
+    if keyisset("Topics", final) and (
+        "Topics" in override.keys() and isinstance(override["Topics"], dict)
+    ):
         override_topics = Topics.parse_obj(override["Topics"]).dict()
         del override_topics["Topics"]
         final["Topics"].update(override_topics)
