@@ -76,6 +76,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/johnpreston/aws_cfn_kafka_admin_provider",
-    version="0.2.2",
+    version="0.3.0",
     zip_safe=False,
 )
