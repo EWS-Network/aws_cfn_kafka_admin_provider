@@ -15,15 +15,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f",
-        "--file-path",
+        "--definition-file",
+        dest="files_paths",
         required=True,
-        dest="file_path",
-        help="Path to the kafka definition file",
+        help="Path to the Topics / ACLs definition files",
+        action="append",
     )
     parser.add_argument(
-        "--override-file-path",
+        "--config",
+        "--config-file-path",
         required=False,
-        dest="override_path",
+        dest="config_path",
         help="Override file path to the kafka definition file",
         default=None,
     )
@@ -40,7 +42,7 @@ def main():
     parser.add_argument("_", nargs="*")
     args = parser.parse_args()
 
-    stack = KafkaStack(args.file_path, args.override_path)
+    stack = KafkaStack(args.files_paths, args.config_path)
     stack.render_topics()
     stack.render_acls()
     if args.output_file:

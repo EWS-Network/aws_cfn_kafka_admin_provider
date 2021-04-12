@@ -76,34 +76,85 @@ def keypresent(x, y):
     return False
 
 
-def merge_contents(primary, override):
+def merge_topics(final, override, extend_all=False):
+    """
+    Function to override and update settings from override to primary
+    Topics are filtered out via the Name property
+
+    :param dict final:
+    :param dict override:
+    :param extend_all: Whether the policies or ACLs can be merged.
+    :return: The final merged dict
+    :rtype: dict
+    """
+    if keyisset("Topics", override):
+        override_topics = Topics.parse_obj(override["Topics"]).dict()
+        if not extend_all:
+            del override_topics["Topics"]
+            final["Topics"].update(override_topics)
+        elif (
+            extend_all
+            and keypresent("Topics", override_topics)
+            and keyisset("Topics", final["Topics"])
+        ):
+            merged_lists = override_topics["Topics"] + final["Topics"]["Topics"]
+            topics = list({v["Name"]: v for v in merged_lists}.values())
+            final["Topics"].update(override_topics)
+            final["Topics"]["Topics"] = topics
+        else:
+            final["Topics"].update(override_topics)
+
+
+def merge_acls(final, override, extend_all=False):
+    """
+    Function to override and update settings from override to primary
+    All ACL policy is a dictionary made of simple objects, no key filtering
+
+    :param dict final:
+    :param dict override:
+    :param extend_all: Whether the policies or ACLs can be merged.
+    :return: The final merged dict
+    :rtype: dict
+    """
+    if keypresent("ACLs", final) and keyisset("ACLs", override):
+        override_acls = ACLs.parse_obj(override["ACLs"]).dict()
+        if keypresent("Policies", override_acls) and not extend_all:
+            del override_acls["Policies"]
+            final["ACLs"].update(override_acls)
+        elif keyisset("Policies", override_acls) and extend_all:
+            if keyisset("Policies", final["ACLs"]):
+                merged_lists = override_acls["Policies"] + final["ACLs"]["Policies"]
+            else:
+                merged_lists = override_acls["Policies"]
+            acls = [dict(y) for y in set(tuple(x.items()) for x in merged_lists)]
+            final["ACLs"].update(override_acls)
+            final["ACLs"]["Policies"] = acls
+
+
+def merge_contents(primary, override, extend_all=False):
     """
     Function to override and update settings from override to primary
     :param primary:
     :param override:
-    :return:
+    :param extend_all: Whether the policies or ACLs can be merged.
+    :return: The final merged dict
+    :rtype: dict
     """
     if not isinstance(override, dict):
         raise TypeError(
             "The content of the override file does not match the expected content pattern."
         )
     final = dict(deepcopy(primary))
-    if "Globals" in override.keys() and isinstance(override["Globals"], dict):
+    if (
+        keypresent("Globals", final)
+        and keyisset("Globals", override)
+        and isinstance(override["Globals"], dict)
+    ):
         override_globals = EwsKafkaParmeters.parse_obj(override["Globals"])
         final["Globals"].update(override_globals.dict())
 
-    if keyisset("ACLs", final) and (keyisset("ACLs", override)):
-        override_acls = ACLs.parse_obj(override["ACLs"]).dict()
-        if keypresent("Policies", override_acls):
-            print("You cannot define policies in override files. Ignoring")
-            del override_acls["Policies"]
-        final["ACLs"].update(override_acls)
-
-    if keyisset("Topics", final) and ("Topics" in override.keys()):
-        override_topics = Topics.parse_obj(override["Topics"]).dict()
-        if keypresent("Topics", override_topics):
-            del override_topics["Topics"]
-        final["Topics"].update(override_topics)
+    merge_acls(final, override, extend_all)
+    merge_topics(final, override, extend_all)
     return final
 
 
@@ -112,7 +163,7 @@ class KafkaStack(object):
     Class to represent the Kafka topics / acls / schemas in CloudFormation.
     """
 
-    def __init__(self, file_path, override_file=None):
+    def __init__(self, files_paths, config_file_path=None):
         self.model = None
         self.template = Template("Kafka topics-acls-schemas root")
         self.stack = None
@@ -120,20 +171,22 @@ class KafkaStack(object):
         self.acl_class = RACLs
         self.topics_r = {}
         self.globals_config = {}
-        if file_path.endswith(".yaml") or file_path.endswith(".yml"):
-            with open(file_path, "r") as file_fd:
-                yaml_content = yaml.load(file_fd.read(), Loader=CfnYamlLoader)
-            if not override_file:
-                self.model = Model.parse_obj(yaml_content)
-            else:
-                with open(override_file, "r") as override_fd:
-                    override_content = yaml.load(
-                        override_fd.read(), Loader=CfnYamlLoader
-                    )
-                final_content = merge_contents(yaml_content, override_content)
-                self.model = Model.parse_obj(final_content)
-        else:
-            self.model = Model.parse_file(file_path)
+        final_content = {"Globals": {}, "Topics": {}, "ACLs": {}}
+        for file_path in files_paths:
+            if file_path.endswith(".yaml") or file_path.endswith(".yml"):
+                with open(file_path, "r") as file_fd:
+                    file_content = file_fd.read()
+                yaml_content = yaml.load(file_content, Loader=CfnYamlLoader)
+                final_content = merge_contents(
+                    final_content, yaml_content, extend_all=True
+                )
+        if config_file_path:
+            with open(config_file_path, "r") as override_fd:
+                override_content = override_fd.read()
+            override_content = yaml.load(override_content, Loader=CfnYamlLoader)
+            final_content = merge_contents(final_content, override_content)
+        self.model = Model.parse_obj(final_content)
+
         if not self.model.Topics and not self.model.ACLs:
             raise KeyError("You must define at least one of ACLs or Topics")
         self.set_globals()
