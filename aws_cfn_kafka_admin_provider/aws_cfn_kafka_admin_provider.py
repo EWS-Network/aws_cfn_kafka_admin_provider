@@ -89,10 +89,10 @@ def merge_topics(final, override, extend_all=False):
     """
     if keyisset("Topics", override):
         override_topics = Topics.parse_obj(override["Topics"]).dict()
-        if not extend_all and not keypresent("Topics", override_topics):
+        if keypresent("Topics", override_topics) and not extend_all:
             del override_topics["Topics"]
             final["Topics"].update(override_topics)
-        elif extend_all and keyisset("Topics", override_topics):
+        elif keyisset("Topics", override_topics) and extend_all:
             if keyisset("Topics", final["Topics"]):
                 merged_lists = override_topics["Topics"] + final["Topics"]["Topics"]
             else:
