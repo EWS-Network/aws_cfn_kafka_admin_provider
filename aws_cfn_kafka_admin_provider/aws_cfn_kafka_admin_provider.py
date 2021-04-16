@@ -92,12 +92,12 @@ def merge_topics(final, override, extend_all=False):
         if not extend_all and not keypresent("Topics", override_topics):
             del override_topics["Topics"]
             final["Topics"].update(override_topics)
-        elif (
-            extend_all
-            and keyisset("Topics", override_topics)
-            and keyisset("Topics", final["Topics"])
-        ):
-            merged_lists = override_topics["Topics"] + final["Topics"]["Topics"]
+        elif extend_all and keyisset("Topics", override_topics):
+            if keyisset("Topics", final["Topics"]):
+                merged_lists = override_topics["Topics"] + final["Topics"]["Topics"]
+            else:
+                merged_lists = override_topics["Topics"]
+
             topics = list({v["Name"]: v for v in merged_lists}.values())
             final["Topics"].update(override_topics)
             final["Topics"]["Topics"] = topics
