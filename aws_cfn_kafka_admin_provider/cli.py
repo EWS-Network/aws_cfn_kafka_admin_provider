@@ -55,7 +55,11 @@ def main():
         if args.format == "yaml":
             print(stack.template.to_yaml())
         else:
-            print(stack.template.to_json())
+            try:
+                print(stack.template.to_json())
+            except TypeError:
+                import pprint
+                pprint.pprint(stack.template.to_dict())
     return 0
 
 
