@@ -8,6 +8,7 @@
 import re
 from copy import deepcopy
 
+import json
 import yaml
 
 try:
@@ -23,10 +24,12 @@ from aws_custom_ews_kafka_resources import KafkaAclPolicy
 from aws_custom_ews_kafka_resources.custom import (
     KafkaTopic as CTopic,
     KafkaAcl as CACLs,
+    KafkaTopicSchema as CTopicSchema
 )
 from aws_custom_ews_kafka_resources.resource import (
     KafkaTopic as RTopic,
     KafkaAcl as RACLs,
+    KafkaTopicSchema as RTopicSchema
 )
 
 from .model import (
@@ -37,7 +40,8 @@ from .model import (
     SecurityProtocol,
     SASLMechanism,
 )
-from .model import Policy, Action, ResourceType, PatternType, Effect
+from .model import Policy, Action, ResourceType, PatternType, Effect, Schema, Schemas, Type as SchemaType, \
+    SerializeAttribute, CompatibilityMode
 
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
@@ -151,6 +155,21 @@ def merge_contents(primary, override, extend_all=False):
         override_globals = EwsKafkaParmeters.parse_obj(override["Globals"])
         final["Globals"].update(override_globals.dict())
 
+    if (
+        keypresent("Schemas", final)
+        and keyisset("Schemas", override)
+        and isinstance(override["Schemas"], dict)
+    ):
+        override_globals = Schemas.parse_obj(override["Schemas"])
+        final["Schemas"].update(override_globals.dict())
+    elif (
+        not keypresent("Schemas", final)
+        and keyisset("Schemas", override)
+        and isinstance(override["Schemas"], dict)
+    ):
+        override_globals = Schemas.parse_obj(override["Schemas"])
+        final["Schemas"] = override_globals.dict()
+
     merge_acls(final, override, extend_all)
     merge_topics(final, override, extend_all)
     return final
@@ -167,6 +186,7 @@ class KafkaStack(object):
         self.stack = None
         self.topic_class = RTopic
         self.acl_class = RACLs
+        self.schemas_r = {}
         self.topics_r = {}
         self.globals_config = {}
         final_content = {"Globals": {}, "Topics": {}, "ACLs": {}}
@@ -215,6 +235,61 @@ class KafkaStack(object):
             }
         )
 
+    def add_topic_schema(self, topic_name, schema_definition):
+        """
+        Method to create a new schema for the given topic
+
+        :param str topic_name:
+        :param Schema schema_definition:
+        """
+        schema_class = RTopicSchema
+        if self.model.Schemas and self.model.Schemas.FunctionName:
+            schema_class = CTopicSchema
+        schema_config = schema_definition.dict()
+        if self.model.Schemas and self.model.Schemas.RegistryUrl:
+            registry_url = self.model.Schemas.RegistryUrl
+        elif keyisset("RegistryUrl", schema_config):
+            registry_url = schema_config["RegistryUrl"]
+        else:
+            raise KeyError("RegistryUrl is not defined in Schema settings nor in Schemas")
+        if self.model.Schemas and self.model.Schemas.RegistryUsername:
+            registry_username = self.model.Schemas.RegistryUsername
+        elif keyisset("RegistryUsername", schema_config):
+            registry_username = schema_config["RegistryUsername"]
+        else:
+            registry_username = Ref(AWS_NO_VALUE)
+        if self.model.Schemas and self.model.Schemas.RegistryPassword:
+            registry_password = self.model.Schemas.RegistryPassword
+        elif keyisset("RegistryPassword", schema_config):
+            registry_password = schema_config["RegistryPassword"]
+        else:
+            registry_password = Ref(AWS_NO_VALUE)
+
+        if isinstance(schema_definition.Definition, str):
+            try:
+                with open(schema_definition.Definition, "r") as definition_fd:
+                    definition = json.dumps(json.loads(definition_fd.read()))
+            except FileNotFoundError:
+                print("Failed to load file, using string literal as definition")
+                definition = schema_definition.Definition
+        else:
+            definition = schema_definition.Definition
+
+        topic_schema_r = schema_class(
+            f"{topic_name}{SchemaType[schema_definition.Type.name].value}"
+            f"{SerializeAttribute[schema_definition.SerializeAttribute.name].value}Schema",
+            SerializeAttribute=SerializeAttribute[schema_definition.SerializeAttribute.name].value,
+            Type=SchemaType[schema_definition.Type.name].value,
+            Definition=definition,
+            Subject=Ref(topic_name),
+            RegistryUrl=registry_url,
+            RegistryUsername=registry_username,
+            RegistryPassword=registry_password,
+            CompatibilityMode=CompatibilityMode[schema_definition.CompatibilityMode.name].value
+        )
+        self.schemas_r[topic_name] = topic_schema_r
+        self.template.add_resource(topic_schema_r)
+
     def render_topics(self):
         if not self.model.Topics or not self.model.Topics.Topics:
             print("No Topics defined")
@@ -242,12 +317,17 @@ class KafkaStack(object):
                     else topic.ReplicationFactor,
                 }
             )
-            if "Settings" in topic_cfg and not topic_cfg["Settings"]:
+            if not keyisset("Settings", topic_cfg) and keypresent("Settings", topic_cfg):
                 del topic_cfg["Settings"]
+            topic_title = NONALPHANUM.sub("", topic.Name.__root__)
+            if topic.Schema and keyisset("Schema", topic_cfg):
+                self.add_topic_schema(topic_title, topic.Schema)
+                del topic_cfg["Schema"]
+
             topic_r = self.template.add_resource(
-                self.topic_class(NONALPHANUM.sub("", topic.Name), **topic_cfg)
+                self.topic_class(topic_title, **topic_cfg)
             )
-            self.topics_r[topic.Name] = topic_r
+            self.topics_r[topic.Name.__root__] = topic_r
 
     def import_topic_name(self, policy):
         """
@@ -263,7 +343,7 @@ class KafkaStack(object):
         return policy.Resource
 
     def render_acls(self):
-        if not self.model.ACLs:
+        if not self.model.ACLs or not self.model.ACLs.Policies:
             return
         function_name = None
         if self.model.ACLs.FunctionName:
