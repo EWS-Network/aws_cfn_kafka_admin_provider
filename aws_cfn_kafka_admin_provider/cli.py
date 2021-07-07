@@ -6,6 +6,7 @@
 
 import argparse
 import sys
+import pprint
 
 from aws_cfn_kafka_admin_provider.aws_cfn_kafka_admin_provider import KafkaStack
 
@@ -58,7 +59,6 @@ def main():
             try:
                 print(stack.template.to_json())
             except TypeError:
-                import pprint
                 pprint.pprint(stack.template.to_dict())
     return 0
 
