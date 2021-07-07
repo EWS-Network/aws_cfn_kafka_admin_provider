@@ -29,7 +29,7 @@ from aws_custom_ews_kafka_resources.custom import (
 from aws_custom_ews_kafka_resources.resource import (
     KafkaTopic as RTopic,
     KafkaAcl as RACLs,
-    KafkaTopicSchema as RTopicSchema
+    KafkaTopicSchema as RTopicSchema,
 )
 
 from .model import (
@@ -40,8 +40,19 @@ from .model import (
     SecurityProtocol,
     SASLMechanism,
 )
-from .model import Policy, Action, ResourceType, PatternType, Effect, Schema, Schemas, Type as SchemaType, \
-    SerializeAttribute, CompatibilityMode
+from .model import (
+    Policy,
+    Action,
+    ResourceType,
+    PatternType,
+    Effect,
+    Schema,
+    SchemasDef,
+    Type as SchemaType,
+    SerializeAttribute,
+    CompatibilityMode,
+    DeletionPolicy
+)
 
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
@@ -160,14 +171,14 @@ def merge_contents(primary, override, extend_all=False):
         and keyisset("Schemas", override)
         and isinstance(override["Schemas"], dict)
     ):
-        override_globals = Schemas.parse_obj(override["Schemas"])
+        override_globals = SchemasDef.parse_obj(override["Schemas"])
         final["Schemas"].update(override_globals.dict())
     elif (
         not keypresent("Schemas", final)
         and keyisset("Schemas", override)
         and isinstance(override["Schemas"], dict)
     ):
-        override_globals = Schemas.parse_obj(override["Schemas"])
+        override_globals = SchemasDef.parse_obj(override["Schemas"])
         final["Schemas"] = override_globals.dict()
 
     merge_acls(final, override, extend_all)
@@ -251,7 +262,9 @@ class KafkaStack(object):
         elif keyisset("RegistryUrl", schema_config):
             registry_url = schema_config["RegistryUrl"]
         else:
-            raise KeyError("RegistryUrl is not defined in Schema settings nor in Schemas")
+            raise KeyError(
+                "RegistryUrl is not defined in Schema settings nor in Schemas"
+            )
         if self.model.Schemas and self.model.Schemas.RegistryUsername:
             registry_username = self.model.Schemas.RegistryUsername
         elif keyisset("RegistryUsername", schema_config):
@@ -278,14 +291,18 @@ class KafkaStack(object):
         topic_schema_r = schema_class(
             f"{topic_name}{SchemaType[schema_definition.Type.name].value}"
             f"{SerializeAttribute[schema_definition.SerializeAttribute.name].value}Schema",
-            SerializeAttribute=SerializeAttribute[schema_definition.SerializeAttribute.name].value,
+            SerializeAttribute=SerializeAttribute[
+                schema_definition.SerializeAttribute.name
+            ].value,
             Type=SchemaType[schema_definition.Type.name].value,
             Definition=definition,
             Subject=Ref(topic_name),
             RegistryUrl=registry_url,
             RegistryUsername=registry_username,
             RegistryPassword=registry_password,
-            CompatibilityMode=CompatibilityMode[schema_definition.CompatibilityMode.name].value
+            CompatibilityMode=CompatibilityMode[
+                schema_definition.CompatibilityMode.name
+            ].value,
         )
         self.schemas_r[topic_name] = topic_schema_r
         self.template.add_resource(topic_schema_r)
@@ -317,15 +334,24 @@ class KafkaStack(object):
                     else topic.ReplicationFactor,
                 }
             )
-            if not keyisset("Settings", topic_cfg) and keypresent("Settings", topic_cfg):
+            if not keyisset("Settings", topic_cfg) and keypresent(
+                "Settings", topic_cfg
+            ):
                 del topic_cfg["Settings"]
-            topic_title = NONALPHANUM.sub("", topic.Name.__root__)
+            topic_title_raw = topic.Name.__root__
+            topic_title = topic_title_raw.replace("-", "").title()
+            topic_title = NONALPHANUM.sub("", topic_title)
             if topic.Schema and keyisset("Schema", topic_cfg):
-                self.add_topic_schema(topic_title, topic.Schema)
+                # self.add_topic_schema(topic_title, topic.Schema)
                 del topic_cfg["Schema"]
-
+            if keypresent("Schema", topic_cfg):
+                del topic_cfg["Schema"]
             topic_r = self.template.add_resource(
-                self.topic_class(topic_title, **topic_cfg)
+                self.topic_class(
+                    topic_title,
+                    DeletionPolicy=DeletionPolicy[self.model.Topics.DeletionPolicy.name].value,
+                    **topic_cfg,
+                )
             )
             self.topics_r[topic.Name.__root__] = topic_r
 
