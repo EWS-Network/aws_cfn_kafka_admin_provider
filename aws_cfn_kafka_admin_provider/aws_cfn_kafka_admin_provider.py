@@ -24,7 +24,7 @@ from aws_custom_ews_kafka_resources import KafkaAclPolicy
 from aws_custom_ews_kafka_resources.custom import (
     KafkaTopic as CTopic,
     KafkaAcl as CACLs,
-    KafkaTopicSchema as CTopicSchema
+    KafkaTopicSchema as CTopicSchema,
 )
 from aws_custom_ews_kafka_resources.resource import (
     KafkaTopic as RTopic,
@@ -51,7 +51,7 @@ from .model import (
     Type as SchemaType,
     SerializeAttribute,
     CompatibilityMode,
-    DeletionPolicy
+    DeletionPolicy,
 )
 
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
@@ -349,7 +349,9 @@ class KafkaStack(object):
             topic_r = self.template.add_resource(
                 self.topic_class(
                     topic_title,
-                    DeletionPolicy=DeletionPolicy[self.model.Topics.DeletionPolicy.name].value,
+                    DeletionPolicy=DeletionPolicy[
+                        self.model.Topics.DeletionPolicy.name
+                    ].value,
                     **topic_cfg,
                 )
             )
