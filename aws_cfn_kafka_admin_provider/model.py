@@ -11,139 +11,139 @@ from pydantic import BaseModel, Extra, Field, constr
 
 
 class SecurityProtocol(Enum):
-    PLAINTEXT = 'PLAINTEXT'
-    SSL = 'SSL'
-    SASL_PLAINTEXT = 'SASL_PLAINTEXT'
-    SASL_SSL = 'SASL_SSL'
+    PLAINTEXT = "PLAINTEXT"
+    SSL = "SSL"
+    SASL_PLAINTEXT = "SASL_PLAINTEXT"
+    SASL_SSL = "SASL_SSL"
 
 
 class SASLMechanism(Enum):
-    PLAIN = 'PLAIN'
-    GSSAPI = 'GSSAPI'
-    OAUTHBEARER = 'OAUTHBEARER'
-    SCRAM_SHA_256 = 'SCRAM-SHA-256'
-    SCRAM_SHA_512 = 'SCRAM-SHA-512'
+    PLAIN = "PLAIN"
+    GSSAPI = "GSSAPI"
+    OAUTHBEARER = "OAUTHBEARER"
+    SCRAM_SHA_256 = "SCRAM-SHA-256"
+    SCRAM_SHA_512 = "SCRAM-SHA-512"
 
 
 class CompatibilityMode(Enum):
-    BACKWARD = 'BACKWARD'
-    BACKWARD_TRANSITIVE = 'BACKWARD_TRANSITIVE'
-    FORWARD = 'FORWARD'
-    FORWARD_TRANSITIVE = 'FORWARD_TRANSITIVE'
-    FULL = 'FULL'
-    FULL_TRANSITIVE = 'FULL_TRANSITIVE'
-    NONE = 'NONE'
+    BACKWARD = "BACKWARD"
+    BACKWARD_TRANSITIVE = "BACKWARD_TRANSITIVE"
+    FORWARD = "FORWARD"
+    FORWARD_TRANSITIVE = "FORWARD_TRANSITIVE"
+    FULL = "FULL"
+    FULL_TRANSITIVE = "FULL_TRANSITIVE"
+    NONE = "NONE"
 
 
 class EwsKafkaParmeters(BaseModel):
     BootstrapServers: Optional[str] = Field(
         None,
-        description='Endpoint URL of the Kafka cluster in the format hostname:port',
+        description="Endpoint URL of the Kafka cluster in the format hostname:port",
     )
     SecurityProtocol: Optional[SecurityProtocol] = Field(
-        'PLAINTEXT', description='Kafka Security Protocol.'
+        "PLAINTEXT", description="Kafka Security Protocol."
     )
     SASLMechanism: Optional[SASLMechanism] = Field(
-        'PLAIN', description='Kafka SASL mechanism for Authentication'
+        "PLAIN", description="Kafka SASL mechanism for Authentication"
     )
     SASLUsername: Optional[str] = Field(
-        '', description='Kafka SASL username for Authentication'
+        "", description="Kafka SASL username for Authentication"
     )
     SASLPassword: Optional[str] = Field(
-        '', description='Kafka SASL password for Authentication'
+        "", description="Kafka SASL password for Authentication"
     )
-    RegistryUrl: Optional[str] = Field(None, description='Schema registry URL')
+    RegistryUrl: Optional[str] = Field(None, description="Schema registry URL")
     RegistryUsername: Optional[str] = Field(
-        None, description='Schema registry username'
+        None, description="Schema registry username"
     )
     RegistryPassword: Optional[str] = Field(
-        None, description='Schema registry password'
+        None, description="Schema registry password"
     )
-    CompatibilityMode: Optional[CompatibilityMode] = 'NONE'
+    CompatibilityMode: Optional[CompatibilityMode] = "NONE"
 
 
 class PatternType(Enum):
-    LITERAL = 'LITERAL'
-    PREFIXED = 'PREFIXED'
-    MATCH = 'MATCH'
+    LITERAL = "LITERAL"
+    PREFIXED = "PREFIXED"
+    MATCH = "MATCH"
 
 
 class ResourceType(Enum):
-    CLUSTER = 'CLUSTER'
-    DELEGATION_TOKEN = 'DELEGATION_TOKEN'
-    GROUP = 'GROUP'
-    TOPIC = 'TOPIC'
-    TRANSACTIONAL_ID = 'TRANSACTIONAL_ID'
+    CLUSTER = "CLUSTER"
+    DELEGATION_TOKEN = "DELEGATION_TOKEN"
+    GROUP = "GROUP"
+    TOPIC = "TOPIC"
+    TRANSACTIONAL_ID = "TRANSACTIONAL_ID"
 
 
 class Action(Enum):
-    ALL = 'ALL'
-    READ = 'READ'
-    WRITE = 'WRITE'
-    CREATE = 'CREATE'
-    DELETE = 'DELETE'
-    ALTER = 'ALTER'
-    DESCRIBE = 'DESCRIBE'
-    CLUSTER_ACTION = 'CLUSTER_ACTION'
-    DESCRIBE_CONFIGS = 'DESCRIBE_CONFIGS'
-    ALTER_CONFIGS = 'ALTER_CONFIGS'
-    IDEMPOTENT_WRITE = 'IDEMPOTENT_WRITE'
+    ALL = "ALL"
+    READ = "READ"
+    WRITE = "WRITE"
+    CREATE = "CREATE"
+    DELETE = "DELETE"
+    ALTER = "ALTER"
+    DESCRIBE = "DESCRIBE"
+    CLUSTER_ACTION = "CLUSTER_ACTION"
+    DESCRIBE_CONFIGS = "DESCRIBE_CONFIGS"
+    ALTER_CONFIGS = "ALTER_CONFIGS"
+    IDEMPOTENT_WRITE = "IDEMPOTENT_WRITE"
 
 
 class Effect(Enum):
-    DENY = 'DENY'
-    ALLOW = 'ALLOW'
+    DENY = "DENY"
+    ALLOW = "ALLOW"
 
 
 class Policy(BaseModel):
-    Resource: constr(regex=r'^[a-zA-Z0-9_.-]+$') = Field(
-        ..., description='Name of the resource to apply the ACL for'
+    Resource: constr(regex=r"^[a-zA-Z0-9_.-]+$") = Field(
+        ..., description="Name of the resource to apply the ACL for"
     )
-    PatternType: Optional[PatternType] = Field('LITERAL', description='Pattern type')
-    Principal: str = Field(..., description='Kafka user to apply the ACLs for.')
+    PatternType: Optional[PatternType] = Field("LITERAL", description="Pattern type")
+    Principal: str = Field(..., description="Kafka user to apply the ACLs for.")
     ResourceType: ResourceType = Field(
-        ..., description='Kafka user to apply the ACLs for.'
+        ..., description="Kafka user to apply the ACLs for."
     )
-    Action: Action = Field(..., description='Access action allowed.')
-    Effect: Effect = Field(..., description='Effect for the ACL.')
+    Action: Action = Field(..., description="Access action allowed.")
+    Effect: Effect = Field(..., description="Effect for the ACL.")
     Host: Optional[str] = Field(
-        '*', description="Specify the host for the ACL. Defaults to '*'"
+        "*", description="Specify the host for the ACL. Defaults to '*'"
     )
 
 
 class SchemasDef(BaseModel):
     FunctionName: Optional[str] = Field(
-        None, description='Name or ARN of the Schema Registry function to use'
+        None, description="Name or ARN of the Schema Registry function to use"
     )
     RegistryUrl: Optional[str] = None
     RegistryUsername: Optional[str] = None
     RegistryPassword: Optional[str] = None
     RegistryUserInfo: Optional[str] = Field(
         None,
-        description='The username and password together in the form of username:password',
+        description="The username and password together in the form of username:password",
     )
     CompatibilityMode: Optional[str] = None
 
 
 class DeletionPolicy(Enum):
-    Retain = 'Retain'
-    Delete = 'Delete'
+    Retain = "Retain"
+    Delete = "Delete"
 
 
 class Name(BaseModel):
-    __root__: constr(regex=r'^[a-zA-Z0-9_.-]+$', min_length=1) = Field(
-        ..., description='Kafka topic name'
+    __root__: constr(regex=r"^[a-zA-Z0-9_.-]+$", min_length=1) = Field(
+        ..., description="Kafka topic name"
     )
 
 
 class PartitionsCount(BaseModel):
     __root__: int = Field(
-        ..., description='Number of partitions for the new Kafka topic'
+        ..., description="Number of partitions for the new Kafka topic"
     )
 
 
 class ReplicationFactor(BaseModel):
-    __root__: int = Field(..., description='Kafka topic replication factor')
+    __root__: int = Field(..., description="Kafka topic replication factor")
 
 
 class Settings(BaseModel):
@@ -160,36 +160,36 @@ class DefinitionDocument(BaseModel):
 
 
 class Type(Enum):
-    AVRO = 'AVRO'
-    JSON = 'JSON'
-    PROTOBUF = 'PROTOBUF'
+    AVRO = "AVRO"
+    JSON = "JSON"
+    PROTOBUF = "PROTOBUF"
 
 
 class SerializeAttribute(Enum):
-    value = 'value'
-    key = 'key'
-    both = 'both'
+    value = "value"
+    key = "key"
+    both = "both"
 
 
 class CompatibilityMode1(Enum):
-    BACKWARD = 'BACKWARD'
-    BACKWARD_TRANSITIVE = 'BACKWARD_TRANSITIVE'
-    FORWARD = 'FORWARD'
-    FORWARD_TRANSITIVE = 'FORWARD_TRANSITIVE'
-    FULL = 'FULL'
-    FULL_TRANSITIVE = 'FULL_TRANSITIVE'
-    NONE = 'NONE'
+    BACKWARD = "BACKWARD"
+    BACKWARD_TRANSITIVE = "BACKWARD_TRANSITIVE"
+    FORWARD = "FORWARD"
+    FORWARD_TRANSITIVE = "FORWARD_TRANSITIVE"
+    FULL = "FULL"
+    FULL_TRANSITIVE = "FULL_TRANSITIVE"
+    NONE = "NONE"
 
 
 class Schema(BaseModel):
     Type: Type
     Definition: Union[str, DefinitionDocument]
     SerializeAttribute: Optional[SerializeAttribute] = Field(
-        'value',
-        description='Defines whether it applies to the key or value of the Subject',
+        "value",
+        description="Defines whether it applies to the key or value of the Subject",
     )
     CompatibilityMode: Optional[CompatibilityMode1] = Field(
-        'FULL', description='The schema compatibility mode'
+        "FULL", description="The schema compatibility mode"
     )
 
 
@@ -197,7 +197,7 @@ class ACLs(BaseModel):
     Policies: Optional[List[Policy]] = None
     FunctionName: Optional[str] = Field(
         None,
-        description='Name or ARN of the Lambda function to use for Custom::KafkaACL',
+        description="Name or ARN of the Lambda function to use for Custom::KafkaACL",
     )
 
 
@@ -214,12 +214,12 @@ class Topics(BaseModel):
     ReplicationFactor: Optional[ReplicationFactor] = None
     FunctionName: Optional[str] = Field(
         None,
-        description='Name or ARN of the Lambda function to use for Custom::KafkaTopic',
+        description="Name or ARN of the Lambda function to use for Custom::KafkaTopic",
     )
-    DeletionPolicy: Optional[DeletionPolicy] = 'Retain'
+    DeletionPolicy: Optional[DeletionPolicy] = "Retain"
     ImportExisting: Optional[bool] = Field(
         True,
-        description='Whether to import existing topics on Create. Fails if set to false',
+        description="Whether to import existing topics on Create. Fails if set to false",
     )
 
 
