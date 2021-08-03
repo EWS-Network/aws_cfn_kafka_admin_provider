@@ -6,6 +6,7 @@
 """Main module."""
 
 import re
+import time
 from copy import deepcopy
 
 import json
@@ -91,31 +92,42 @@ def keypresent(x, y):
     return False
 
 
-def merge_topics(final, override, extend_all=False):
+def merge_topics(final, override, extend_config_only=False):
     """
     Function to override and update settings from override to primary
     Topics are filtered out via the Name property
-
     :param dict final:
     :param dict override:
-    :param extend_all: Whether the policies or ACLs can be merged.
+    :param extend_config_only: Whether the policies or ACLs can be merged.
     :return: The final merged dict
     :rtype: dict
     """
     if keyisset("Topics", override):
-        override_topics = Topics.parse_obj(override["Topics"]).dict()
-        if keypresent("Topics", override_topics) and not extend_all:
-            del override_topics["Topics"]
-            final["Topics"].update(override_topics)
-        elif keyisset("Topics", override_topics) and extend_all:
+        override_top_topics = Topics.parse_obj(override["Topics"]).dict()
+        if extend_config_only:
+            # Allows to add the config and ensure that we do not import topics from config
+            if keypresent("Topics", override_top_topics):
+                del override_top_topics["Topics"]
+            final["Topics"].update(override_top_topics)
+        elif (
+            not extend_config_only
+            and keyisset("Topics", override_top_topics)
+        ):
             if keyisset("Topics", final["Topics"]):
-                merged_lists = override_topics["Topics"] + final["Topics"]["Topics"]
-            else:
-                merged_lists = override_topics["Topics"]
-
-            topics = list({v["Name"]: v for v in merged_lists}.values())
-            final["Topics"].update(override_topics)
-            final["Topics"]["Topics"] = topics
+                existing_topics = deepcopy(final["Topics"]["Topics"])
+                override_topics = deepcopy(override_top_topics["Topics"])
+                merged_lists = override_topics + existing_topics
+                del final["Topics"]["Topics"]
+                del override_top_topics["Topics"]
+                topics = list({v["Name"]: v for v in merged_lists}.values())
+                final["Topics"].update(override_top_topics)
+                final["Topics"]["Topics"] = topics
+            elif not keypresent("Topics", final["Topics"]):
+                override_topics = deepcopy(override_top_topics["Topics"])
+                del override_top_topics["Topics"]
+                topics = list({v["Name"]: v for v in override_topics}.values())
+                final["Topics"].update(override_top_topics)
+                final["Topics"]["Topics"] = topics
 
 
 def merge_acls(final, override, extend_all=False):
@@ -182,7 +194,7 @@ def merge_contents(primary, override, extend_all=False):
         final["Schemas"] = override_globals.dict()
 
     merge_acls(final, override, extend_all)
-    merge_topics(final, override, extend_all)
+    merge_topics(final, override, not extend_all)
     return final
 
 
@@ -205,14 +217,14 @@ class KafkaStack(object):
             if file_path.endswith(".yaml") or file_path.endswith(".yml"):
                 with open(file_path, "r") as file_fd:
                     file_content = file_fd.read()
-                yaml_content = yaml.load(file_content, Loader=CfnYamlLoader)
+                yaml_content = yaml.load(file_content, Loader=Loader)
                 final_content = merge_contents(
                     final_content, yaml_content, extend_all=True
                 )
         if config_file_path:
             with open(config_file_path, "r") as override_fd:
                 override_content = override_fd.read()
-            override_content = yaml.load(override_content, Loader=CfnYamlLoader)
+            override_content = yaml.load(override_content, Loader=Loader)
             final_content = merge_contents(final_content, override_content)
         self.model = Model.parse_obj(final_content)
 
