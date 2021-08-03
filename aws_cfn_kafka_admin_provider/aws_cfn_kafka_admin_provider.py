@@ -109,10 +109,7 @@ def merge_topics(final, override, extend_config_only=False):
             if keypresent("Topics", override_top_topics):
                 del override_top_topics["Topics"]
             final["Topics"].update(override_top_topics)
-        elif (
-            not extend_config_only
-            and keyisset("Topics", override_top_topics)
-        ):
+        elif not extend_config_only and keyisset("Topics", override_top_topics):
             if keyisset("Topics", final["Topics"]):
                 existing_topics = deepcopy(final["Topics"]["Topics"])
                 override_topics = deepcopy(override_top_topics["Topics"])
