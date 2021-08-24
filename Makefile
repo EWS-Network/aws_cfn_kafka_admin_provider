@@ -73,20 +73,21 @@ docs: ## generate Sphinx HTML documentation, including API docs
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
+release: dist ## package and upload a release
+	twine check dist/*
+	poetry publish --build
+
 release-test: dist ## package and upload a release
 	twine check dist/* || echo Failed to validate release
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	poetry config repositories.pypitest https://test.pypi.org/legacy/
+	poetry publish -r pypitest --build
 
-release: dist ## package and upload a release
-	twine upload dist/*
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
+dist: data-model conform clean ## builds source and wheel package
+	poetry build
 	ls -l dist
 
-install: clean data-model ## install the package to the active Python's site-packages
-	python setup.py install
+install: clean ## install the package to the active Python's site-packages
+	pip install . --use-pep517 --use-feature=in-tree-build
 
 conform	: ## Conform to a standard of coding syntax
 	black aws_cfn_kafka_admin_provider tests
